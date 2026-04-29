@@ -1,0 +1,5 @@
+[[redirects]]
+  from = "/etherscan-api/*"
+  to = "https://api.etherscan.io/:splat"
+  status = 200
+  force = true

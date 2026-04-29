@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --color-surface: #0f1014;
+  --color-surface-elevated: #16181f;
+  --color-border: #2a2d38;
+  --color-muted: #8b909d;
+  --color-accent: #7c6cf8;
+  --color-accent-dim: rgba(124, 108, 248, 0.15);
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+    color-scheme: dark;
+  }
+  body {
+    @apply m-0 min-h-svh bg-surface text-zinc-200 font-sans;
+  }
+  #root {
+    @apply min-h-svh w-full;
+  }
+}
