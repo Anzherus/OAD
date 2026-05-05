@@ -174,7 +174,12 @@ export function TraceImport() {
           {/* Metrics */}
           <section>
             <h3 className="mb-3 text-base font-semibold text-zinc-100">Сводные метрики</h3>
-            <MetricStrip describe={report.describe} flags={report.flags} unit="нат." />
+            <MetricStrip
+              describe={report.describe}
+              flags={report.flags}
+              unit="нат."
+              suspicion={report.suspicion}
+            />
           </section>
 
           {/* Charts */}

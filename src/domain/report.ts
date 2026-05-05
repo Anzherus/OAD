@@ -1,6 +1,8 @@
 import { benfordFirstDigit } from './stats/benford'
+import { computeCounterpartyConcentration } from './stats/counterpartyConcentration'
 import { describeTransfers } from './stats/describe'
 import { computeFlags } from './stats/flags'
+import { computeSuspicionScore } from './stats/suspicionScore'
 import { temporalFromTransfers } from './stats/temporal'
 import { buildTransactionGraph } from './graph/buildGraph'
 import type {
@@ -36,6 +38,16 @@ export function buildFullReport(
     graphLimits.maxNodes,
     graphLimits.maxEdges,
   )
+  const concentration = computeCounterpartyConcentration(rows, focusAddress)
+
+  const suspicion = computeSuspicionScore(
+    describe,
+    temporal,
+    benford,
+    flags,
+    concentration,
+    truncated,
+  )
 
   return {
     generatedAtIso: new Date().toISOString(),
@@ -49,6 +61,8 @@ export function buildFullReport(
     benford,
     flags,
     graph,
+    concentration,
+    suspicion,
   }
 }
 

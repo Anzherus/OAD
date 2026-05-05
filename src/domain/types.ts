@@ -79,6 +79,46 @@ export type TransactionGraph = {
   edges: GraphEdge[]
 }
 
+export type CounterpartyShareRow = {
+  label: string
+  share: number
+  volume: number
+}
+
+/** HHI / Shannon on volume shares by counterparty (|amount|), same scope as flow graph. */
+export type CounterpartyConcentrationStats = {
+  totalVolumeAbs: number
+  counterpartiesCount: number
+  /** Σ w_i² — 1 = one counterparty, 1/N = perfectly spread */
+  hhi: number
+  /** (HHI − 1/N) / (1 − 1/N) for N>1, else 0 */
+  hhiNormalized: number
+  /** −Σ w_i log2 w_i */
+  entropyBits: number
+  maxEntropyBits: number
+  /** entropyBits / maxEntropyBits (1 = uniform), 0 if no spread */
+  relativeUniformity: number
+  topShares: CounterpartyShareRow[]
+  lorenz: { x: number; y: number }[]
+}
+
+export type SuspicionBreakdown = {
+  burstPoints: number
+  dustPoints: number
+  outlierPoints: number
+  benfordPoints: number
+  concentrationPoints: number
+  dataQualityPoints: number
+  rawSum: number
+}
+
+/** Aggregated 0–100 heuristic alert level (not probability of wrongdoing). */
+export type SuspicionScore = {
+  percent: number
+  label: 'низкий' | 'умеренный' | 'повышенный' | 'высокий'
+  breakdown: SuspicionBreakdown
+}
+
 export type FullReport = {
   generatedAtIso: string
   focusAddress: string
@@ -91,4 +131,6 @@ export type FullReport = {
   benford: BenfordResult | null
   flags: HeuristicFlags
   graph: TransactionGraph
+  concentration: CounterpartyConcentrationStats
+  suspicion: SuspicionScore
 }

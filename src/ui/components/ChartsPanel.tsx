@@ -55,8 +55,153 @@ export function ChartsPanel({ report }: { report: FullReport }) {
   // Scatter: abs amounts (we reconstruct from describe percentiles as reference lines)
   const { q1Abs, medianAbs, q3Abs, meanAbs, maxAbs } = report.describe
 
+  const conc = report.concentration
+  const shareBarData = conc.topShares.map((r) => ({
+    ...r,
+    sharePct: Math.round(r.share * 10000) / 100,
+  }))
+  const lorenzSeries = conc.lorenz.map((p) => ({
+    ...p,
+    ideal: p.x,
+  }))
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
+      {/* Counterparty concentration — full width */}
+      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 lg:col-span-2">
+        <h3 className="mb-1 text-left text-sm font-semibold text-zinc-200">
+          Концентрация контрагентов по объёму (|сумма|)
+        </h3>
+        {conc.counterpartiesCount === 0 ? (
+          <p className="text-left text-sm text-zinc-500">Нет связанных контрагентов с ненулевым объёмом.</p>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="min-h-64 w-full">
+              <p className="mb-2 text-left text-xs font-medium text-zinc-500">Топ долей объёма (%)</p>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={shareBarData}
+                    layout="vertical"
+                    margin={{ left: 8, right: 8, top: 4, bottom: 4 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      domain={[0, 'dataMax']}
+                      tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                      unit="%"
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="label"
+                      width={108}
+                      tick={{ fill: '#a1a1aa', fontSize: 9 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#18181b',
+                        border: '1px solid #3f3f46',
+                        fontSize: 12,
+                      }}
+                      formatter={(value: unknown, _n, item) => {
+                        const row = (item as { payload?: { volume?: number } })?.payload
+                        const v =
+                          typeof row?.volume === 'number'
+                            ? row.volume.toLocaleString('ru-RU', {
+                                maximumFractionDigits: 8,
+                              })
+                            : ''
+                        return [`${String(value)}%`, v ? `объём ${v}` : '']
+                      }}
+                    />
+                    <Bar dataKey="sharePct" fill="#22d3ee" radius={[0, 4, 4, 0]} name="доля %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="min-h-64 w-full">
+              <p className="mb-2 text-left text-xs font-medium text-zinc-500">
+                Кривая Лоренца (неравенство объёма между адресами)
+              </p>
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={lorenzSeries} margin={{ left: 4, right: 8, top: 8, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                    <XAxis
+                      type="number"
+                      dataKey="x"
+                      domain={[0, 1]}
+                      tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                      tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`}
+                      label={{
+                        value: 'доля контрагентов (по счёту)',
+                        fill: '#71717a',
+                        fontSize: 10,
+                        position: 'insideBottom',
+                        offset: -4,
+                      }}
+                    />
+                    <YAxis
+                      domain={[0, 1]}
+                      tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                      tickFormatter={(v) => `${Math.round(Number(v) * 100)}%`}
+                      label={{
+                        value: 'накопл. объём',
+                        fill: '#71717a',
+                        angle: -90,
+                        position: 'insideLeft',
+                        fontSize: 10,
+                      }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: '#18181b',
+                        border: '1px solid #3f3f46',
+                        fontSize: 12,
+                      }}
+                      formatter={(v: unknown, name: unknown) => [
+                        `${(Number(v) * 100).toFixed(1)}%`,
+                        String(name) === 'ideal' ? 'равномерно' : 'факт',
+                      ]}
+                      labelFormatter={(lx) => `контрагенты: ${(Number(lx) * 100).toFixed(0)}%`}
+                    />
+                    <Line
+                      type="linear"
+                      dataKey="ideal"
+                      stroke="#52525b"
+                      strokeDasharray="5 5"
+                      dot={false}
+                      name="равномерно"
+                      strokeWidth={1.5}
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="y"
+                      stroke="#f472b6"
+                      dot={false}
+                      name="факт"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+        {conc.counterpartiesCount > 0 ? (
+          <p className="mt-4 text-left text-xs text-zinc-500">
+            Контрагентов (N): {conc.counterpartiesCount} · HHI: {conc.hhi.toFixed(4)}
+            {conc.counterpartiesCount > 1
+              ? ` · HHI* (норм. 0–1): ${conc.hhiNormalized.toFixed(4)}`
+              : ''}
+            {' · '}
+            H (Шеннон): {conc.entropyBits.toFixed(3)} бит (макс. log₂N ≈ {conc.maxEntropyBits.toFixed(3)}) ·
+            относит. равномерность: {(conc.relativeUniformity * 100).toFixed(1)}%
+          </p>
+        ) : null}
+      </div>
+
       {/* Intervals histogram */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
         <h3 className="mb-3 text-left text-sm font-semibold text-zinc-200">

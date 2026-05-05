@@ -203,6 +203,68 @@ export function AboutMethods() {
         </div>
       </section>
 
+      {/* Suspicion score formula */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-semibold text-zinc-100">
+          6. Эвристический индекс подозрительности (рейтинг кошелька)
+        </h3>
+        <p className="max-w-3xl text-sm text-zinc-400">
+          На сводной панели показывается целое число{' '}
+          <span className="font-medium text-zinc-200">P от 0 до 100 %</span> —
+          не вероятность проступка и не криминалистическое заключение, а суммарная
+          оценка «на что обратить внимание» по уже посчитанным метрикам. Исходный
+          код:{' '}
+          <code className="rounded bg-zinc-800 px-1 font-mono text-xs text-zinc-300">
+            src/domain/stats/suspicionScore.ts
+          </code>
+          .
+        </p>
+        <p className="max-w-3xl text-sm text-zinc-400">
+          Обозначения:{' '}
+          <span className="font-mono text-violet-300/90">I[условие]</span> = 1,
+          если условие выполняется, иначе 0;{' '}
+          <span className="font-mono text-violet-300/90">clamp(x, a, b)</span> =
+          min(b, max(a, x)).
+        </p>
+        <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-950/50 p-4">
+          <p className="text-sm font-medium text-zinc-200">Шаг 1. Сырой балл</p>
+          <pre className="overflow-x-auto rounded-lg bg-zinc-900 px-4 py-3 font-mono text-sm leading-relaxed text-violet-300">
+{`S_raw = s_burst + s_dust + s_outlier + s_benford + s_conc + s_trunc`}
+          </pre>
+          <p className="text-sm text-zinc-400">Компоненты (все неотрицательные):</p>
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-zinc-900 px-4 py-3 font-mono text-[13px] leading-relaxed text-violet-300">
+{`s_burst   = 22·I[W > 0] + min(10, 5·max(0, W − 1))
+            W — число окон всплесков активности
+
+s_dust    = 24 · clamp((D − 0.18) / (0.50 − 0.18), 0, 1)
+            D — доля пыли (0…1); при D ≤ 18% вклад 0, при D ≥ 50% вклад 24
+
+s_outlier = 16 · I[крупный выброс суммы — тот же критерий, что флаг largeOutlier]
+
+s_benford = 0  (если теста Бенфорда нет или недостаточно данных)
+          = 18 · clamp((M − 0.014) / (0.056 − 0.014), 0, 1)  иначе
+            M — MAD отклонения от закона Бенфорда
+
+s_conc    = 17 · H* · I[N ≥ 2]
+            H* — нормированный индекс Херфиндаля (hhiNormalized),
+            N — число уникальных контрагентов по объёму
+
+s_trunc   = 5 · I[выборка усечена по лимиту «макс. строк» в настройках]`}
+          </pre>
+          <p className="text-sm font-medium text-zinc-200">Шаг 2. Итог в процентах</p>
+          <pre className="overflow-x-auto rounded-lg bg-zinc-900 px-4 py-3 font-mono text-sm leading-relaxed text-violet-300">
+{`P = min(100, round(S_raw))`}
+          </pre>
+          <p className="text-sm text-zinc-400">
+            Уровень текстовой метки:{' '}
+            <span className="text-zinc-300">низкий</span> при P ≤ 25;
+            <span className="text-zinc-300"> умеренный</span> при 26–50;
+            <span className="text-zinc-300"> повышенный</span> при 51–75;
+            <span className="text-zinc-300"> высокий</span> при P &gt; 75.
+          </p>
+        </div>
+      </section>
+
       {/* Data sources */}
       <section className="space-y-3">
         <h3 className="text-lg font-semibold text-zinc-100">Источники данных</h3>
